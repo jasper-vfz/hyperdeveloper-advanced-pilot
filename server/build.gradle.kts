@@ -57,6 +57,8 @@ plugins {
 
 /** Configure the dependencies required within the project. */
 dependencies {
+    developmentOnly("org.springframework.boot", "spring-boot-devtools")
+
     // ======= ANNOTATION PROCESSORS =======
     // lombok is used to reduce boilerplate code for model classes.
     annotationProcessor("org.projectlombok", "lombok")

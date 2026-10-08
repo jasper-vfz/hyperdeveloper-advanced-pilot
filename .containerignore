@@ -1,0 +1,11 @@
+.git
+.idea
+.vscode
+.DS_Store
+**/node_modules
+**/.svelte-kit
+**/.gradle
+**/build
+**/out
+**/.env
+**/.env.*

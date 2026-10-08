@@ -1,0 +1,68 @@
+services:
+  server-compiler:
+    build:
+      context: .
+      dockerfile: server/Containerfile
+    working_dir: /workspace
+    command:
+      [
+        "sh",
+        "-c",
+        "./gradlew classes --no-daemon && touch /tmp/classes-ready && exec ./gradlew classes --continuous --no-daemon",
+      ]
+    volumes:
+      - ./server:/workspace:z
+      # Separate from the server's Gradle home: Gradle can't hand off cache locks across containers.
+      - gradle-cache-compiler:/root/.gradle
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/classes-ready"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+      start_period: 300s
+      start_interval: 2s
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Containerfile
+    working_dir: /workspace
+    # Own project cache dir: /workspace/.gradle is locked by server-compiler's continuous build.
+    command: ["./gradlew", "bootRun", "--no-daemon", "--project-cache-dir", "/tmp/gradle-project-cache"]
+    ports:
+      - "${SERVER_HOST_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_LIQUIBASE_DROP_FIRST: "false"
+      DATASOURCE_URL: jdbc:h2:file:/data/vethub;DB_CLOSE_ON_EXIT=FALSE
+      SERVER_PORT: "8080"
+    volumes:
+      - ./server:/workspace:z
+      - gradle-cache-server:/root/.gradle
+      - h2-data:/data
+    depends_on:
+      server-compiler:
+        condition: service_healthy
+
+  client:
+    build:
+      context: .
+      dockerfile: client/Containerfile
+    working_dir: /app
+    command: ["sh", "-c", "bun install --frozen-lockfile && bun run dev --host 0.0.0.0"]
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_SERVER_BASE_URL: http://localhost:${SERVER_HOST_PORT:-8080}
+      VITE_USE_POLLING: "true"
+    volumes:
+      - ./client:/app:z
+      - client-node-modules:/app/node_modules
+    depends_on:
+      - server
+
+volumes:
+  client-node-modules:
+  gradle-cache-compiler:
+  gradle-cache-server:
+  h2-data:

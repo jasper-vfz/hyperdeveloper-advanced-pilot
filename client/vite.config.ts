@@ -8,5 +8,10 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	define: {
 		__APP_VERSION__: JSON.stringify(pkg.version)
+	},
+	server: {
+		watch: {
+			usePolling: process.env.VITE_USE_POLLING === 'true'
+		}
 	}
 });

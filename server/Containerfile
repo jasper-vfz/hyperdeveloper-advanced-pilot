@@ -1,0 +1,11 @@
+FROM docker.io/library/eclipse-temurin:25-jdk
+
+WORKDIR /workspace
+
+COPY server/gradlew ./gradlew
+COPY server/gradle ./gradle
+RUN chmod +x ./gradlew
+
+EXPOSE 8080
+
+CMD ["./gradlew", "bootRun", "--no-daemon"]
